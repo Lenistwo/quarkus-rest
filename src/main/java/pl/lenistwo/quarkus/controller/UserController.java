@@ -1,17 +1,17 @@
 package pl.lenistwo.quarkus.controller;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
+import pl.lenistwo.quarkus.entities.ErrorResponse;
 import pl.lenistwo.quarkus.entities.User;
-import pl.lenistwo.quarkus.exceptions.UserNotFoundException;
 import pl.lenistwo.quarkus.repository.UserDAOImpl;
 
 import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.persistence.NoResultException;
+import javax.validation.Valid;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.Collection;
-import java.util.Optional;
 
 @Path("/user")
 public class UserController {
@@ -32,8 +32,36 @@ public class UserController {
     @GET()
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public User getUser(@PathParam("id") int id) {
-        Optional<User> user = Optional.ofNullable(repository.getUserById(id));
-        return user.orElseThrow(() -> new UserNotFoundException("User with id: " + id + " not exist!"));
+    public Response getUser(@PathParam("id") int id) {
+        try {
+            User user = repository.getUserById(id);
+            return Response.ok(user).build();
+        } catch (NoResultException e) {
+            return Response.ok().entity(new ErrorResponse(HttpResponseStatus.NOT_FOUND.code(), "User not found")).build();
+        }
+
+    }
+
+    @POST
+    public void addUser(@Valid User user) {
+        repository.addUser(user);
+    }
+
+    @PATCH
+    @Path("/{id}")
+    public Response updateUser(@PathParam("id") int id, @Valid User user) {
+        try {
+            repository.updateUser(id, user);
+            return Response.ok().build();
+        } catch (Exception e) {
+            return Response.ok(new ErrorResponse(HttpResponseStatus.NO_CONTENT.code(), e.getMessage())).build();
+        }
+    }
+
+    @GET
+    @Path("/limit/{limit}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<User> getUsersWithLimit(@PathParam("limit") int limit){
+        return repository.usersWithLimit(limit);
     }
 }

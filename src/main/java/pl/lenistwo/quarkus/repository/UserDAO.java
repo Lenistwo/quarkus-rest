@@ -8,4 +8,7 @@ public interface UserDAO {
 
     Collection<User> allUsers();
     User getUserById(int id);
+    void addUser(User user);
+    void updateUser(int id, User user);
+    Collection<User> usersWithLimit(int limit);
 }
